@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Vencimiento</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(2, auto);
+            gap: 15px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .item {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 1rem;
+            margin: 0 0 10px 0;
+        }
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .result {
+            font-size: 0.9rem;
+            color: #333;
+        }
+        button {
+            width: 100%;
+            padding: 8px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+
+        /* Color de fondo para vencidos y alertas */
+        .item-expired {
+            background-color: #ffcccc;
+        }
+        .item-alert {
+            background-color: #ffff99;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calculadora de Vencimiento</h1>
+    <div class="container">
+        <div class="item">
+            <h2>Curación de AVC con Tegaderm con centro absorbente (24 Hs)</h2>
+            <input type="datetime-local" id="startTime1">
+            <div id="result1" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Curación de AVC con Tegaderm (7 Días)</h2>
+            <input type="datetime-local" id="startTime2">
+            <div id="result2" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Vencimiento de Tapón Blanco (4 Días)</h2>
+            <input type="datetime-local" id="startTime3">
+            <div id="result3" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Vencimiento de Tapón Azul (8 Días)</h2>
+            <input type="datetime-local" id="startTime4">
+            <div id="result4" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Guía de Infusión Intermitente (24 Hs)</h2>
+            <input type="datetime-local" id="startTime5">
+            <div id="result5" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Guía de Infusión Continua (8 Días)</h2>
+            <input type="datetime-local" id="startTime6">
+            <div id="result6" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Guía de Infusión de Propofol (12 Hs)</h2>
+            <input type="datetime-local" id="startTime7">
+            <div id="result7" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Guía de Infusión de NPS (24 Hs)</h2>
+            <input type="datetime-local" id="startTime8">
+            <div id="result8" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Guía de Infusión de Nutrición Parenteral (24 Hs)</h2>
+            <input type="datetime-local" id="startTime9">
+            <div id="result9" class="result"></div>
+        </div>
+        <div class="item">
+            <h2>Guía de Nutrición Enteral (24 Hs)</h2>
+            <input type="datetime-local" id="startTime10">
+            <div id="result10" class="result"></div>
+        </div>
+    </div>
+    <button onclick="calculateAllExpirations()">Calcular Vencimientos</button>
+
+    <script>
+        const durations = [24, 168, 96, 192, 24, 192, 12, 24, 24, 24];
+
+        function calculateExpiration(startTime, hours) {
+            const start = new Date(startTime);
+            const expirationTime = new Date(start.getTime() + hours * 60 * 60 * 1000);
+            const alertTime = new Date(expirationTime.getTime() - 3 * 60 * 60 * 1000);
+            const now = new Date();
+
+            let message = `Vence el: ${expirationTime.toLocaleString()}`;
+            if (now >= alertTime && now <= expirationTime) {
+                message += ' - ¡Alerta! Quedan menos de 3 horas.';
+            } else if (now > expirationTime) {
+                message += ' - ¡Vencido!';
+            }
+
+            return { message, expirationTime };
+        }
+
+        function updateTimer(resultDiv, expirationTime) {
+            const timerInterval = setInterval(() => {
+                const now = new Date();
+                const timeRemaining = expirationTime - now;
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    resultDiv.innerText = '¡Vencido!';
+                    resultDiv.closest('.item').classList.add('item-expired');
+                } else {
+                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+                    resultDiv.innerText = `Quedan: ${hours}h ${minutes}m ${seconds}s`;
+                }
+            }, 1000);
+        }
+
+        function calculateSingleExpiration(inputId, resultId, duration) {
+            const startTime = document.getElementById(inputId).value;
+            const resultDiv = document.getElementById(resultId);
+
+            if (startTime) {
+                const { message, expirationTime } = calculateExpiration(startTime, duration);
+                resultDiv.innerText = message;
+
+                // Reset background color
+                const itemDiv = resultDiv.closest('.item');
+                itemDiv.classList.remove('item-alert', 'item-expired');
+
+                // Add background color based on expiration status
+                if (expirationTime < new Date()) {
+                    itemDiv.classList.add('item-expired'); // Vencido
+                } else if (expirationTime - 3 * 60 * 60 * 1000 <= new Date()) {
+                    itemDiv.classList.add('item-alert'); // Alerta
+                }
+
+                // Start the timer for this item
+                updateTimer(resultDiv, expirationTime);
+            } else {
+                resultDiv.innerText = 'No se ingresó una fecha.';
+                const itemDiv = resultDiv.closest('.item');
+                itemDiv.classList.remove('item-alert', 'item-expired');
+            }
+        }
+
+        function calculateAllExpirations() {
+            calculateSingleExpiration('startTime1', 'result1', durations[0]);
+            calculateSingleExpiration('startTime2', 'result2', durations[1]);
+            calculateSingleExpiration('startTime3', 'result3', durations[2]);
+            calculateSingleExpiration('startTime4', 'result4', durations[3]);
+            calculateSingleExpiration('startTime5', 'result5', durations[4]);
+            calculateSingleExpiration('startTime6', 'result6', durations[5]);
+            calculateSingleExpiration('startTime7', 'result7', durations[6]);
+            calculateSingleExpiration('startTime8', 'result8', durations[7]);
+            calculateSingleExpiration('startTime9', 'result9', durations[8]);
+            calculateSingleExpiration('startTime10', 'result10', durations[9]);
+        }
+    </script>
+</body>
+</html>
